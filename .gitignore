@@ -1,0 +1,11 @@
+*.pyc
+secrets/
+client_secret.json
+.stored_credentials.json
+config.py
+venv/
+
+# Debug files
+dump.json
+email.html
+subjects.json
