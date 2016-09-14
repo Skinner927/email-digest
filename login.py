@@ -5,6 +5,7 @@ from __future__ import print_function
 import oauth2client
 from oauth2client import client
 from oauth2client import tools
+from oauth2client import file
 
 import config
 from gmail_scopes import SCOPES

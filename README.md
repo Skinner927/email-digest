@@ -32,6 +32,24 @@ Next step is to configure
 
 ## Configuration
 
+You will need to create an OAuth Client ID with Google's API and also configure 
+the application locally.
+
+### OAuth Client ID
+
+Head over to [Google's API Manager](https://console.developers.google.com). You 
+will want to create a new project, this is at the very top of the page. 
+
+Once a project is created, head over to the "Credentials" tab. Here, create a 
+new "OAuth client ID". Application type will be "other". Click "OK" on the modal 
+that pops up with the secrets, don't bother noting them down. You should now 
+see your new OAuth client ID listed in the table on this page. 
+
+Click the download button at the far right of the row and save this file as 
+`client_secret.json` and place it in the directory where you cloned the repo.
+
+### Application Config
+
 Copy `config.example.py` to `config.py`.
 
 Open this file and you will find defaults and hopefully a description of what 
@@ -53,7 +71,8 @@ Config is now set up. Ensure you give this script access to your account with
 
 Run `python login.py` to perform the login. This should present you with a link 
 to open in a web browser, once visited, allow the app access to your account and 
-copy the resulting code back into the login script. 
+copy the resulting code back into the login script. You can run `login.py` again 
+to verify everything works.
 
 Once you've done this, you're completely set up and the digets should work.
 
