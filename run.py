@@ -30,16 +30,20 @@ except ImportError:
 
 class MLStripper(HTMLParser):
     """
-    Helper class for stripping HTML tags
-    http://stackoverflow.com/a/7778368/721519
+    Helper class for stripping HTML tags so we can create a text-based email.
+    Help from: http://stackoverflow.com/a/7778368/721519
     """
-
     def __init__(self):
         HTMLParser.__init__(self)
         self.result = []
+        # Add more as needed
+        self.newline_after_tags = ['div', 'p', 'tr', 'hr', 'li', 'header',
+                                   'title', 'pre', 'section',
+                                   'h', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']
 
     def handle_data(self, d):
-        self.result.append(d.strip(' \t'))
+        if d.strip(' \t\r\n') != '':
+            self.result.append(d)
 
     def handle_charref(self, number):
         codepoint = int(number[1:], 16) if number[0] in (u'x', u'X') else int(
@@ -49,6 +53,12 @@ class MLStripper(HTMLParser):
     def handle_entityref(self, name):
         codepoint = htmlentitydefs.name2codepoint[name]
         self.result.append(unichr(codepoint))
+
+    def handle_endtag(self, tag):
+        if tag in self.newline_after_tags:
+            self.result.append('\n')
+        else:
+            self.result.append(' ')
 
     def get_text(self):
         return u''.join(self.result)
@@ -99,6 +109,10 @@ def wrap_html_label(val):
 
 def main():
     service = get_service()
+
+    # Figure out who we are
+    profile = service.users().getProfile(userId='me').execute()
+    me = profile.get('emailAddress')
 
     # Get labels that we defined as digest labels in config
     lbl_req = service.users().labels().list(userId='me').execute()
@@ -204,14 +218,13 @@ def main():
 
         formatted_labels = ' '.join(formatted_labels)
 
-        # Link with auth user
-        # TODO: https://mail.google.com/mail/?authuser=your.email.address@gmail.com#all/138d85da096d2126
         message_body += """\
       <tr><td style="border: 1px solid black; padding: 5px;">
-                                      <!-- ID & subject -->
-        <a style="display:block;" href="#inbox/%s">%s</a>
-        <!-- labels -->
-        <div>%s</div>
+                                      <!-- Email, ID & subject -->
+        <a style="display:block;"
+           href="https://mail.google.com/mail/?authuser=%s#all/%s">%s</a>
+                                                 <!-- labels -->
+        <span style="display:none;">Labels: </span><div>%s</div>
         <div>
           <!-- date -->
           <small>%s</small>
@@ -219,7 +232,7 @@ def main():
         <!-- snippet -->
         <p>%s</p>
       </td></tr>
-    """ % (t['id'], t['subject'], formatted_labels, t['date'], t['snippet'])
+    """ % (me, t['id'], t['subject'], formatted_labels, t['date'], t['snippet'])
 
     message_body += '</table>'
 
@@ -234,10 +247,12 @@ def main():
     # with open('email.html', 'w') as f:
     #     f.write(message_body)
 
-    subject = 'Digest %s for: [%s]' % (time_right_now, ', '.join(labels_found),)
+    subject = '%s %s [%s]' % \
+              (config.APPLICATION_NAME, time_right_now, ', '.join(labels_found))
 
     # Create and send the email
-    msg = gmail_mailer.create_html_message('Email Digest',
+    msg = gmail_mailer.create_html_message(config.APPLICATION_NAME +
+                                           ' <%s>' % me,
                                            config.SEND_DIGEST_TO,
                                            subject, message_body,
                                            plain_body)
@@ -264,7 +279,7 @@ def main():
     labels_to_remove = list(labels_to_remove)
 
     # API tells us to cool our jets so, let's do that
-    time.sleep(5) # seconds
+    time.sleep(5)  # seconds
 
     def thread_label_remove_handler(request_id, response, exception):
         if exception is not None:
